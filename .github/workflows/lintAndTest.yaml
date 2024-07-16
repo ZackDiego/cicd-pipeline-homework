@@ -9,7 +9,7 @@ on:
 # 指定工作流程(jobs)
 # 每個 actions 至少要有一個 job
 jobs:
-  syntax-check:
+  lint-check:
     # 指定運行環境，可以多個
     runs-on: ubuntu-latest
     steps:
@@ -33,9 +33,9 @@ jobs:
         - name: Prettier check
           run: ./node_modules/.bin/prettier --write .
 
-  test-code:
+  mocha-test:
     runs-on: ubuntu-latest
-    needs: syntax-check
+    needs: lint-check
     steps:
         - name: checkout-repository
           uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
     
   notify-discord:
     runs-on: ubuntu-latest
-    needs: test-code
+    needs: mocha-test
     if: failure()
     steps:
       - name: Send Discord message on failure
