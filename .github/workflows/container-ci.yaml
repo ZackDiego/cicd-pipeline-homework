@@ -4,40 +4,61 @@ on:
   pull_request:
     branches: main
 
+env:
+  DOCKER_IMAGE_NAME: 'zackchiang/cicd-pipeline-nodejs'
+  DOCKER_IMAGE_VERSION: '1.0'
+  CONTAINER_NAME: 'ci-container'
+
 jobs:
   lint-check:
     runs-on: ubuntu-latest
     steps:
-        - run: echo "This job was tirggered by a ${{ github.event_name }} event"
-
         - name: checkout-repository
           uses: actions/checkout@v4
         
-        - name: Set up Node.js
-          uses: actions/setup-node@v4
-          with:
-            node-version: '18'
-            cache: 'npm'
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v3
     
-        - name: Install dependencies
-          run:  npm ci
-        
-        - name: Lint check
-          run: ./node_modules/.bin/eslint .
-
-        - name: Prettier check
-          run: ./node_modules/.bin/prettier --write .
-        
-
-
-        - name: Build and push
+        - name: Cache Docker layers
+          uses: actions/cache@v4
+          with:
+            path: /tmp/.buildx-cache
+            key: ${{ runner.os }}-buildx-${{ github.sha }}
+            restore-keys: |
+              ${{ runner.os }}-buildx-
+            
+        - name: Build Docker image
           uses: docker/build-push-action@v6
           with:
-            push: true
-            tags: user/app:latest
-        
-        
+            context: .
+            push: false
+            tags: ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }}
+            cache-from: type=gha
+            cache-to: type=gha,mode=max
 
+        - name: Start Docker container
+          run: |
+            docker run -d \
+            --name ${{ env.CONTAINER_NAME }} \
+            -v $(pwd):/app \
+            -w /app \
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }}
+
+        - name: Lint check inside Docker container
+          run: |
+            docker exec ${{ env.CONTAINER_NAME }} \
+            ./node_modules/.bin/eslint .
+
+        - name: Prettier check inside Docker container
+          run: |
+            docker exec ${{ env.CONTAINER_NAME }} \
+            ./node_modules/.bin/prettier --write .
+
+        - name: Stop and remove Docker container
+          run: |
+            docker stop ${{ env.CONTAINER_NAME }} \
+            && docker rm ${{ env.CONTAINER_NAME }}
+        
   mocha-test:
     runs-on: ubuntu-latest
     needs: lint-check
@@ -50,7 +71,7 @@ jobs:
             docker run --rm \
             -v $(pwd)/mochawesome-report:/app/mochawesome-report \
             -v $(pwd)/coverage:/app/coverage \
-            my-node-app \
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }} \
             sh -c './node_modules/.bin/nyc --reporter=html ./node_modules/.bin/mocha --reporter mochawesome'
     
         - name: Upload Mochawesome report
