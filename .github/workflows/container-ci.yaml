@@ -40,9 +40,8 @@ jobs:
           run: |
             docker run -d \
             --name ${{ env.CONTAINER_NAME }} \
-            -v $(pwd):/app \
-            -w /app \
-            ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }}
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }} \
+            sh -c 'npm ci'
 
         - name: Lint check inside Docker container
           run: |
