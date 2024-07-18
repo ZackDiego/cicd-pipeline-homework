@@ -68,8 +68,8 @@ jobs:
         - name: Run Mocha tests and generate reports inside Docker container
           run: |
             docker run --rm \
-            -v $(pwd)/mochawesome-report:/app/mochawesome-report \
-            -v $(pwd)/coverage:/app/coverage \
+            -v $(pwd)/mochawesome-report:/mochawesome-report \
+            -v $(pwd)/coverage:/coverage \
             ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }} \
             sh -c './node_modules/.bin/nyc --reporter=html ./node_modules/.bin/mocha --reporter mochawesome'
     
