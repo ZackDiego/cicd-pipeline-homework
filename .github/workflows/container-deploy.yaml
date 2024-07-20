@@ -7,6 +7,12 @@ on:
     branches: main
     types: closed
 
+env:
+  DOCKER_IMAGE_NAME: 'zackchiang/cicd-pipeline-nodejs'
+  DOCKER_IMAGE_VERSION: '1.0'
+  CONTAINER_NAME: 'cd-container'
+  APP_PORT: '3000'
+
 # 指定工作流程(jobs)
 # 每個 actions 至少要有一個 job
 jobs:
@@ -14,33 +20,28 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-        - run: echo "This job was tirggered by a ${{ github.event_name }} event"
         - name: checkout-repository
           uses: actions/checkout@v4
 
+        - name: Login to Docker Hub
+          uses: docker/login-action@v3
+          with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+        - name: Stop the container
+          run: |
+            if [ $(docker ps -q -f name=${{ env.CONTAINER_NAME }}) ]; then
+              docker stop ${{ env.CONTAINER_NAME }}
+              docker rm ${{ env.CONTAINER_NAME }}
+            fi
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
-        
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
-        
-        - name: Run SSH commands
-          uses: appleboy/ssh-action@master
-          with:
-            host: ${{ secrets.EC2_HOST }}
-            username: ${{ secrets.EC2_USERNAME }}
-            key: ${{ secrets.EC2_KEY }}
-            port: ${{ secrets.EC2_PORT }}
-            script: |
-                echo "Connected to EC2"
-                cd /home/ubuntu/cicd-pipeline-workshop
-                git pull
-                git checkout phase1
-                pm2 restart src/server.js
+        - name: Stop the container
+          run: |
+            docker run \
+            -v $(pwd)/mochawesome-report:/home/node/app/mochawesome-report \
+            -v $(pwd)/coverage:/home/node/app/coverage \
+            -p ${{ env.APP_PORT }}:3000\
+            --name ${{ env.CONTAINER_NAME }}
+            ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }} \
+            sh -c './node_modules/.bin/nyc --reporter=html ./node_modules/.bin/mocha --reporter mochawesome'
