@@ -84,14 +84,14 @@ jobs:
           if: ${{ always() }}
           with:
             name: mochawesome-report
-            path: ./mochawesome-report
+            path: $(pwd)/mochawesome-report
 
         - name: Upload code coverage report
           uses: actions/upload-artifact@v4
           if: ${{ always() }}
           with:
             name: code-coverage-report
-            path: ./coverage
+            path: $(pwd)/coverage
     
   notify-discord:
     runs-on: ubuntu-latest
