@@ -64,6 +64,12 @@ jobs:
     steps:
         - name: checkout-repository
           uses: actions/checkout@v4
+        
+        - name: check pwd
+          run: echo "pwd is $(pwd)"
+
+        - name: Create report directories
+          run: mkdir -p mochawesome-report coverage
       
         - name: Run Mocha tests and generate reports inside Docker container
           run: |

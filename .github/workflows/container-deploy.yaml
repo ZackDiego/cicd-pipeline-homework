@@ -36,7 +36,7 @@ jobs:
               docker rm ${{ env.CONTAINER_NAME }}
             fi
 
-        - name: Stop the container
+        - name: Start the container
           run: |
             docker run \
             -v $(pwd)/mochawesome-report:/home/node/app/mochawesome-report \
