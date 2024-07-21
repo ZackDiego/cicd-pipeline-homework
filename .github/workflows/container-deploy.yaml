@@ -20,28 +20,43 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-        - name: checkout-repository
-          uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-        - name: Login to Docker Hub
-          uses: docker/login-action@v3
-          with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
-        
-        - name: Stop the container
-          run: |
+      - name: Stop and remove the container on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          port: ${{ secrets.EC2_PORT }}
+          script: |
             if [ $(docker ps -q -f name=${{ env.CONTAINER_NAME }}) ]; then
               docker stop ${{ env.CONTAINER_NAME }}
               docker rm ${{ env.CONTAINER_NAME }}
             fi
 
-        - name: Start the container
-          run: |
-            docker run \
-            -d \
-            -v $(pwd)/mochawesome-report:/home/node/app/mochawesome-report \
-            -v $(pwd)/coverage:/home/node/app/coverage \
+      - name: Pull the latest Docker image on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          port: ${{ secrets.EC2_PORT }}
+          script: |
+            docker pull ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }}
+
+      - name: Start the container on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          port: ${{ secrets.EC2_PORT }}
+          script: |
+            docker run -d \
+            -v /path/to/your/app/mochawesome-report:/home/node/app/mochawesome-report \
+            -v /path/to/your/app/coverage:/home/node/app/coverage \
             -p ${{ env.APP_PORT }}:3000 \
             --name ${{ env.CONTAINER_NAME }} \
             ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }}
