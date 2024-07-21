@@ -39,6 +39,7 @@ jobs:
         - name: Start the container
           run: |
             docker run \
+            -d
             -v $(pwd)/mochawesome-report:/home/node/app/mochawesome-report \
             -v $(pwd)/coverage:/home/node/app/coverage \
             -p ${{ env.APP_PORT }}:3000 \
