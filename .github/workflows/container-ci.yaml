@@ -67,9 +67,6 @@ jobs:
         
         - name: check pwd
           run: echo "pwd is $(pwd)"
-
-        - name: Create report directories
-          run: mkdir -p mochawesome-report coverage
       
         - name: Run Mocha tests and generate reports inside Docker container
           run: |
@@ -77,6 +74,7 @@ jobs:
             -v $(pwd)/mochawesome-report:/home/node/app/mochawesome-report \
             -v $(pwd)/coverage:/home/node/app/coverage \
             ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_VERSION }} \
+            --user node \
             sh -c './node_modules/.bin/nyc --reporter=html ./node_modules/.bin/mocha --reporter mochawesome'
     
         - name: Upload Mochawesome report
